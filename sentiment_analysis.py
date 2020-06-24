@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Jun 23 09:45:38 2020
+Created on Tue Jun 23 20:41:57 2020
 
 @author: tewar
 """
+
 
 # Importing libraries
 import numpy as np
 import pandas as pd
 
 # Importing the Dataset
-dataset = pd.read_csv('train.csv', encoding='ISO-8859-1')
+dataset = pd.read_csv('train.tsv', sep="\t")
 
-dataset2 = dataset.iloc[:2000,:]
+#dataset2 = dataset
 
 import re
 import nltk
@@ -27,8 +28,8 @@ def remove_pat(inpt, pat): #for removing the @names and links in the comments
         inpt = re.sub(i, ' ', inpt)
     return inpt
 
-for i in range(0, 2000):
-    rev = dataset2['SentimentText'][i]
+for i in range(0, 7589):
+    rev = dataset['tweet'][i]
     rev = remove_pat(rev, '@[\w]*') #user name
     rev = rev.replace('(', '') #bracket one
     rev = rev.replace(')', '') #bracket two
@@ -43,10 +44,54 @@ for i in range(0, 2000):
     rev = ' '.join(rev)
     c.append(rev)
 
-from sklearn.feature_extraction.text import CountVectorizer
-cv = CountVectorizer(max_features = 3800)
-x = cv.fit_transform(c).toarray()
-y = dataset2.iloc[:, 1].values
+#dataset2['tweet'] = c
 
+# Tokenizing for words into sequence
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+tokenizer = Tokenizer(num_words=3000)
+tokenizer.fit_on_texts(c)
+x = tokenizer.texts_to_sequences(c)
+x = pad_sequences(x)
+
+# OneHotEncoding the target
+y = pd.get_dummies(dataset['label']).values
+
+# Train Test Split
 from sklearn.model_selection import train_test_split
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size= 0.2, random_state=0)
+
+# Model building
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import Embedding
+from keras.layers import LSTM
+from keras.layers import SpatialDropout1D
+model = Sequential()
+model.add(Embedding(3000, 200,input_length = 101))
+model.add(SpatialDropout1D(0.25))
+model.add(LSTM(150, dropout=0.2, recurrent_dropout=0.2))
+model.add(Dense(3,activation='softmax'))
+model.compile(loss = 'categorical_crossentropy', optimizer='adam',metrics = ['accuracy'])
+
+model.fit(x_train, y_train, epochs = 4, batch_size = 32)
+
+y_pred = model.predict(x_test)
+
+# Prediction
+def prediction(text):
+    x_test = pad_sequences(tokenizer.texts_to_sequences([text]), maxlen=101)
+    score = model.predict([x_test])[0]
+    if np.argmax(score) == 2:
+        a = "POSITIVE"
+    elif np.argmax(score) == 0:
+        a = "NEGATIVE"
+    elif np.argmax(score) == 1:
+        a = "NEUTRAL"
+    return print(a)
+
+prediction('I hate
+           mondays.')
+
+# Saving
+model.save('nlp.h5')
