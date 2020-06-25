@@ -47,8 +47,8 @@ for i in range(0, 7589):
 #dataset2['tweet'] = c
 
 # Tokenizing for words into sequence
-from keras.preprocessing.text import Tokenizer
-from keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 tokenizer = Tokenizer(num_words=3000)
 tokenizer.fit_on_texts(c)
 x = tokenizer.texts_to_sequences(c)
@@ -62,11 +62,11 @@ from sklearn.model_selection import train_test_split
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size= 0.2, random_state=0)
 
 # Model building
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.layers import Embedding
-from keras.layers import LSTM
-from keras.layers import SpatialDropout1D
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Embedding
+from tensorflow.keras.layers import LSTM
+from tensorflow.keras.layers import SpatialDropout1D
 model = Sequential()
 model.add(Embedding(3000, 200,input_length = 101))
 model.add(SpatialDropout1D(0.25))
@@ -90,8 +90,7 @@ def prediction(text):
         a = "NEUTRAL"
     return print(a)
 
-prediction('I hate
-           mondays.')
+prediction('I hate mondays.')
 
 # Saving
-model.save('nlp.h5')
+model.save('nlp2.h5')
